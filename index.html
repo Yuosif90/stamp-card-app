@@ -3,18 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-  <title>کارتا مۆران</title>
+  <title>کارتا مۆران یا زیرەک</title>
   <style>
     * {
       box-sizing: border-box;
       user-select: none;
       -webkit-user-select: none;
-      -webkit-touch-callout: none;
     }
     body {
       margin: 0;
       font-family: system-ui, -apple-system, sans-serif;
-      background: #f8fafc;
+      background: #f1f5f9;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -26,11 +25,12 @@
     .card {
       background: white;
       padding: 30px 20px;
-      border-radius: 24px;
+      border-radius: 26px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.06);
       text-align: center;
       width: 90%;
       max-width: 360px;
+      position: relative;
     }
 
     h2 {
@@ -43,6 +43,7 @@
       color: #64748b;
       font-size: 14px;
       margin: 0 0 20px 0;
+      line-height: 1.5;
     }
 
     /* شاشا داخوازکرنا ژمارێ */
@@ -52,7 +53,7 @@
       gap: 15px;
     }
 
-    input[type="tel"] {
+    input[type="tel"], input[type="password"] {
       width: 100%;
       padding: 14px;
       border: 2px solid #e2e8f0;
@@ -64,7 +65,7 @@
       background: #f8fafc;
     }
 
-    input[type="tel"]:focus {
+    input:focus {
       border-color: #0d9488;
       background: #fff;
     }
@@ -120,17 +121,42 @@
       transform: scale(1.05);
     }
 
-    /* دەڤەرا لێدانا مۆرێ */
-    #touch-area {
-      background: #f1f5f9;
-      border: 2px dashed #0d9488;
+    /* دوگمەیا لێدانا مۆرێ ژ لایێ کاشێری ڤە */
+    .btn-cashier {
+      background: #0d9488;
+      color: white;
+      border: none;
       border-radius: 16px;
-      padding: 22px;
+      padding: 16px;
+      width: 100%;
       font-size: 16px;
       font-weight: bold;
-      color: #0d9488;
-      touch-action: none; /* ناهێلیت دەست لێدان لاپەری بلڤینیت */
       cursor: pointer;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
+    }
+
+    .btn-cashier:active {
+      transform: scale(0.98);
+    }
+
+    /* پەنجەرا پین کۆدی */
+    #pin-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-box {
+      background: white;
+      padding: 25px;
+      border-radius: 20px;
+      width: 85%;
+      max-width: 300px;
+      text-align: center;
     }
   </style>
 </head>
@@ -138,7 +164,7 @@
 
   <div class="card">
     
-    <!-- شاشا ئێکێ: نڤیسینا ژمارێ -->
+    <!-- شاشا ١: تۆمارکرنا ژمارێ -->
     <div id="auth-screen">
       <h2>ب خێر هاتی</h2>
       <p>ژمارا تەلەفۆنا خۆ بنڤیسە دا کارتا تە دەستپێبکەت</p>
@@ -146,11 +172,11 @@
       <button class="btn-submit" onclick="registerUser()">دەستپێبکە</button>
     </div>
 
-    <!-- شاشا دووێ: کارتا مۆران -->
+    <!-- شاشا ٢: کارتا مۆران -->
     <div id="stamp-screen">
       <h2>کارتا مۆران</h2>
       <div class="user-info" id="display-phone"></div>
-      <p>مۆرا دارین (یان ۳ تلان بێکڤە) ل ڤێرێ بدە</p>
+      <p id="status-text">تەلەفۆنێ نێزیکی کارتا NFC بکە یان بدە دەستێ کاشێری</p>
 
       <div class="stamps-container">
         <div class="slot" id="s1">1</div>
@@ -161,28 +187,55 @@
         <div class="slot" id="s6">🎁</div>
       </div>
 
-      <div id="touch-area">جهێ لێدانا مۆرێ</div>
+      <button class="btn-cashier" onclick="openPinModal()">لێدانا مۆرێ (تایبەت ب کاشێری)</button>
     </div>
 
   </div>
 
+  <!-- پەنجەرا لێدانا پاسۆردێ کاشێری -->
+  <div id="pin-modal">
+    <div class="modal-box">
+      <h3 style="margin-top:0">کۆدێ نهێنی یێ کاشێری</h3>
+      <input type="password" id="cashier-pin" placeholder="****" maxlength="4" autofocus />
+      <div style="display:flex; gap:10px; margin-top:15px;">
+        <button class="btn-submit" style="flex:1" onclick="verifyPin()">پەژراندن</button>
+        <button class="btn-submit" style="flex:1; background:#94a3b8" onclick="closePinModal()">زڤڕین</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    const CASHIER_SECRET_PIN = "1234";
+
     let currentPhone = "";
     let stampCount = 0;
     const maxStamps = 6;
-    let isLocked = false;
 
     const authScreen = document.getElementById('auth-screen');
     const stampScreen = document.getElementById('stamp-screen');
     const phoneInput = document.getElementById('phone-input');
     const displayPhone = document.getElementById('display-phone');
-    const touchArea = document.getElementById('touch-area');
+    const pinModal = document.getElementById('pin-modal');
+    const cashierPinInput = document.getElementById('cashier-pin');
+    const statusText = document.getElementById('status-text');
 
-    // ل دەستپێکێ تەماشەی LocalStorage دکەت
     window.addEventListener('DOMContentLoaded', () => {
       const savedPhone = localStorage.getItem('loyalty_phone');
+      
+      // پشکنینا تۆکێنا NFC
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasNfcToken = urlParams.get('stamp_token') === 'cafe_nfc_secure_2026';
+
+      if (hasNfcToken) {
+        // ئێکسەر تۆکێن ژ ناڤبەرا بەستەری دهێتە ڕەشکرن دا د مێژوویێ دا نەمینیت
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
       if (savedPhone) {
         openCard(savedPhone);
+        if (hasNfcToken) {
+          applyStampSuccess();
+        }
       }
     });
 
@@ -202,11 +255,10 @@
       stampScreen.style.display = 'block';
       displayPhone.textContent = "کڕیار: " + phone;
 
-      // خواندنا هژمارا مۆران ژ تەلەفۆنێ
       stampCount = parseInt(localStorage.getItem('loyalty_stamps_' + currentPhone) || "0");
       renderStamps();
 
-      // پشکنین دگەل سێرڤەری (ئەگەر هەبیت)
+      // وەرگرتنا داتایان ژ سێرڤەرێ Supabase
       fetch('/api/stamp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -219,61 +271,77 @@
           localStorage.setItem('loyalty_stamps_' + currentPhone, stampCount);
           renderStamps();
         }
-      })
-      .catch(err => console.log("سێرڤەر نەهاتە دیتن، کار ل سەر میمۆرییا تەلەفۆنێ دکەت."));
+      }).catch(err => {});
     }
 
-    // لێدانا مۆرێ ب ۳ تلان (Touch)
-    touchArea.addEventListener('touchstart', function(e) {
-      if (isLocked) return;
+    function openPinModal() {
+      cashierPinInput.value = "";
+      pinModal.style.display = "flex";
+      cashierPinInput.focus();
+    }
 
-      // ئەگەر ۳ تل (یان زێدەتر) بەر شاشەی بکەڤن
-      if (e.touches.length >= 3) {
-        e.preventDefault();
-        applyStamp();
-      }
-    }, { passive: false });
+    function closePinModal() {
+      pinModal.style.display = "none";
+    }
 
-    // لێدانا مۆرێ و کەسک کرن
-    function applyStamp() {
-      if (isLocked) return;
-      isLocked = true;
-
-      if (stampCount < maxStamps) {
-        stampCount++;
+    function verifyPin() {
+      if (cashierPinInput.value === CASHIER_SECRET_PIN) {
+        closePinModal();
+        applyStampSuccess();
       } else {
-        stampCount = 1; // ئەگەر تژێ بوو، ژ نوی دەستپێدکەت
+        alert("کۆدێ نهێنی خەلەتە!");
+        cashierPinInput.value = "";
       }
+    }
 
-      // پاشکەفتکرن
-      localStorage.setItem('loyalty_stamps_' + currentPhone, stampCount);
-      renderStamps();
+    // لێدانا مۆرێ و فرێکرن بۆ سێرڤەری
+    async function applyStampSuccess() {
+      statusText.textContent = "چاڤەڕێ بە...";
 
-      // ڤایبرەیشن دەمێ کەسک دبیت
-      if (navigator.vibrate) navigator.vibrate(100);
+      try {
+        const res = await fetch('/api/stamp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: currentPhone, action: 'stamp' })
+        });
+        
+        const data = await res.json();
 
-      touchArea.textContent = 'مۆر سەرکەفتیانە لێدرا! ✓';
-      touchArea.style.background = '#0d9488';
-      touchArea.style.color = '#ffffff';
-
-      // فرێکرن بۆ سێرڤەری ل پشت پەردێ
-      fetch('/api/stamp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: currentPhone, action: 'stamp' })
-      }).catch(err => console.log("سێرڤەر ئۆفلاینە"));
-
-      // پشتی ۱.٥ چرکەیان دزڤڕیتە باری ئاسایی
-      setTimeout(() => {
-        isLocked = false;
-        if (stampCount === maxStamps) {
-          touchArea.textContent = 'پیرۆزە! تە خەلات بدەستڤە ئینا 🎉';
-        } else {
-          touchArea.textContent = 'جهێ لێدانا مۆرێ';
+        // ئەگەر کڕیار بەری ٣٠ خولەکان هەول دابیت مۆرێ لێبدەت
+        if (res.status === 429) {
+          alert(data.message);
+          statusText.textContent = data.message;
+          statusText.style.color = "#dc2626";
+          return;
         }
-        touchArea.style.background = '#f1f5f9';
-        touchArea.style.color = '#0d9488';
-      }, 1500);
+
+        if (data && data.stamps !== undefined) {
+          stampCount = data.stamps;
+          localStorage.setItem('loyalty_stamps_' + currentPhone, stampCount);
+          renderStamps();
+
+          if (navigator.vibrate) navigator.vibrate(100);
+
+          if (stampCount === 0 && data.rewards > 0) {
+            statusText.textContent = "پیرۆزە! تە خەلات بدەستڤە ئینا 🎉";
+            statusText.style.color = "#0d9488";
+            statusText.style.fontWeight = "bold";
+          } else {
+            statusText.textContent = "مۆر سەرکەفتیانە هاتە لێدان! ✓";
+            statusText.style.color = "#0d9488";
+            statusText.style.fontWeight = "bold";
+
+            setTimeout(() => {
+              statusText.textContent = "تەلەفۆنێ نێزیکی کارتا NFC بکە یان بدە دەستێ کاشێری";
+              statusText.style.color = "#64748b";
+              statusText.style.fontWeight = "normal";
+            }, 3000);
+          }
+        }
+      } catch (err) {
+        statusText.textContent = "کێشەیەک د گرێدانا سێرڤەری دا هەیە";
+        statusText.style.color = "#dc2626";
+      }
     }
 
     function renderStamps() {
