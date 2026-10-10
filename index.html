@@ -46,7 +46,6 @@
       line-height: 1.5;
     }
 
-    /* شاشا داخوازکرنا ژمارێ */
     #auth-screen {
       display: flex;
       flex-direction: column;
@@ -81,7 +80,6 @@
       cursor: pointer;
     }
 
-    /* شاشا مۆران */
     #stamp-screen {
       display: none;
     }
@@ -121,7 +119,6 @@
       transform: scale(1.05);
     }
 
-    /* دوگمەیا لێدانا مۆرێ ژ لایێ کاشێری ڤە */
     .btn-cashier {
       background: #0d9488;
       color: white;
@@ -135,11 +132,6 @@
       box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
     }
 
-    .btn-cashier:active {
-      transform: scale(0.98);
-    }
-
-    /* پەنجەرا پین کۆدی */
     #pin-modal {
       display: none;
       position: fixed;
@@ -164,7 +156,7 @@
 
   <div class="card">
     
-    <!-- شاشا ١: تۆمارکرنا ژمارێ -->
+    <!-- شاشا ١: تۆمارکرن -->
     <div id="auth-screen">
       <h2>ب خێر هاتی</h2>
       <p>ژمارا تەلەفۆنا خۆ بنڤیسە دا کارتا تە دەستپێبکەت</p>
@@ -192,7 +184,7 @@
 
   </div>
 
-  <!-- پەنجەرا لێدانا پاسۆردێ کاشێری -->
+  <!-- پەنجەرا پاسۆردێ کاشێری -->
   <div id="pin-modal">
     <div class="modal-box">
       <h3 style="margin-top:0">کۆدێ نهێنی یێ کاشێری</h3>
@@ -205,7 +197,7 @@
   </div>
 
   <script>
-    const CASHIER_SECRET_PIN = "9092";
+    const CASHIER_SECRET_PIN = "1234";
 
     let currentPhone = "";
     let stampCount = 0;
@@ -222,12 +214,10 @@
     window.addEventListener('DOMContentLoaded', () => {
       const savedPhone = localStorage.getItem('loyalty_phone');
       
-      // پشکنینا تۆکێنا NFC
       const urlParams = new URLSearchParams(window.location.search);
       const hasNfcToken = urlParams.get('stamp_token') === 'cafe_nfc_secure_2026';
 
       if (hasNfcToken) {
-        // ئێکسەر تۆکێن ژ ناڤبەرا بەستەری دهێتە ڕەشکرن دا د مێژوویێ دا نەمینیت
         window.history.replaceState({}, document.title, window.location.pathname);
       }
 
@@ -258,7 +248,6 @@
       stampCount = parseInt(localStorage.getItem('loyalty_stamps_' + currentPhone) || "0");
       renderStamps();
 
-      // وەرگرتنا داتایان ژ سێرڤەرێ Supabase
       fetch('/api/stamp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -294,10 +283,29 @@
       }
     }
 
-    // لێدانا مۆرێ و فرێکرن بۆ سێرڤەری
     async function applyStampSuccess() {
-      statusText.textContent = "چاڤەڕێ بە...";
+      // دەستبەجێ ل سەر شاشەی مۆرێ کەسک دکەت و لەرزینێ ددەت (بێی گیرۆبوون)
+      if (stampCount < maxStamps) {
+        stampCount++;
+      } else {
+        stampCount = 1;
+      }
+      localStorage.setItem('loyalty_stamps_' + currentPhone, stampCount);
+      renderStamps();
 
+      if (navigator.vibrate) navigator.vibrate(100);
+
+      statusText.textContent = "مۆر سەرکەفتیانە هاتە لێدان! ✓";
+      statusText.style.color = "#0d9488";
+      statusText.style.fontWeight = "bold";
+
+      setTimeout(() => {
+        statusText.textContent = "تەلەفۆنێ نێزیکی کارتا NFC بکە یان بدە دەستێ کاشێری";
+        statusText.style.color = "#64748b";
+        statusText.style.fontWeight = "normal";
+      }, 3000);
+
+      // ل پشت پەردێ زانیارییان بۆ سێرڤەری فرێدکەت
       try {
         const res = await fetch('/api/stamp', {
           method: 'POST',
@@ -307,9 +315,12 @@
         
         const data = await res.json();
 
-        // ئەگەر کڕیار بەری ٣٠ خولەکان هەول دابیت مۆرێ لێبدەت
+        // ئەگەر کڕیار بەری ٣٠ خولەکان هاتبیت
         if (res.status === 429) {
           alert(data.message);
+          stampCount--;
+          localStorage.setItem('loyalty_stamps_' + currentPhone, stampCount);
+          renderStamps();
           statusText.textContent = data.message;
           statusText.style.color = "#dc2626";
           return;
@@ -319,28 +330,9 @@
           stampCount = data.stamps;
           localStorage.setItem('loyalty_stamps_' + currentPhone, stampCount);
           renderStamps();
-
-          if (navigator.vibrate) navigator.vibrate(100);
-
-          if (stampCount === 0 && data.rewards > 0) {
-            statusText.textContent = "پیرۆزە! تە خەلات بدەستڤە ئینا 🎉";
-            statusText.style.color = "#0d9488";
-            statusText.style.fontWeight = "bold";
-          } else {
-            statusText.textContent = "مۆر سەرکەفتیانە هاتە لێدان! ✓";
-            statusText.style.color = "#0d9488";
-            statusText.style.fontWeight = "bold";
-
-            setTimeout(() => {
-              statusText.textContent = "تەلەفۆنێ نێزیکی کارتا NFC بکە یان بدە دەستێ کاشێری";
-              statusText.style.color = "#64748b";
-              statusText.style.fontWeight = "normal";
-            }, 3000);
-          }
         }
       } catch (err) {
-        statusText.textContent = "کێشەیەک د گرێدانا سێرڤەری دا هەیە";
-        statusText.style.color = "#dc2626";
+        console.log("خەلەتی د سێرڤەری دا:", err);
       }
     }
 
