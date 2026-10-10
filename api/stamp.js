@@ -10,33 +10,33 @@ const COOLDOWN_MS = COOLDOWN_MINUTES * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'تەنها ڕێگە بە POST دەدرێت' });
+    return res.status(405).json({ error: 'تەنێ میتۆدا POST یا رێکپێدایە' });
   }
 
   const { phone, action } = req.body;
 
   if (!phone) {
-    return res.status(400).json({ error: 'ژمارەی مۆبایل پێویستە' });
+    return res.status(400).json({ error: 'ژمارا تەلەفۆنێ پێدڤیە' });
   }
 
   try {
-    // هێنانی زانیاری کڕیار
+    // ١. ل کڕیاری دگەڕیێت
     let { data: customer, error: fetchError } = await supabase
       .from('customers')
       .select('*')
       .eq('phone', phone)
       .maybeSingle();
 
-    // ئەگەر کڕیاری نوێ بوو، ڕاستەوخۆ دروستی دەکەین
+    // ٢. ئەگەر کڕیار نوی بوو (null بوو)، دێ ئێکسەر کڕیارەکێ نوی دروست کەت دا تێک نەچیت
     if (!customer) {
       const { data: newCustomer, error: insertError } = await supabase
         .from('customers')
         .insert([{ phone: phone, stamps: 0, rewards: 0, updated_at: new Date().toISOString() }])
         .select()
         .single();
-
+        
       if (insertError) {
-        return res.status(500).json({ error: 'هەڵە لە دروستکردنی کڕیار: ' + insertError.message });
+        return res.status(500).json({ error: 'خەلەتی د دروستکرنا کڕیارێ نوی دا: ' + insertError.message });
       }
       customer = newCustomer;
     }
@@ -47,8 +47,8 @@ export default async function handler(req, res) {
 
     if (action === 'stamp') {
       const now = new Date();
-
-      // پشکنینی ٣٠ خولەک (تەنها ئەگەر مۆری پێشووی هەبووبێت)
+      
+      // ٣. پشکنینا ماوەیێ ٣٠ خولەکان
       if (customer && customer.updated_at && customer.stamps > 0) {
         const lastStampTime = new Date(customer.updated_at).getTime();
         const diff = now.getTime() - lastStampTime;
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
           const remainingMinutes = Math.ceil((COOLDOWN_MS - diff) / (60 * 1000));
           return res.status(429).json({
             error: 'cooldown',
-            message: `تکایە چاوەڕێ بە، ناتوانی مۆری نوێ لێبدەی تا ${remainingMinutes} خولەکی تر.`
+            message: `تکایە چاڤەڕێ بە، تو نەشێی مۆرەکا نوی لێبدەی هەتا ${remainingMinutes} خولەکێن دی.`
           });
         }
       }
@@ -70,25 +70,22 @@ export default async function handler(req, res) {
         newRewards += 1;
       }
 
+      // ٤. نوی کرن و لێدانا مۆرێ (Update)
       const { data: updatedCustomer, error: updateError } = await supabase
         .from('customers')
-        .update({
-          stamps: newStamps,
-          rewards: newRewards,
-          updated_at: now.toISOString()
-        })
+        .update({ stamps: newStamps, rewards: newRewards, updated_at: now.toISOString() })
         .eq('phone', phone)
         .select()
         .single();
 
       if (updateError) {
-        return res.status(500).json({ error: 'هەڵە لە نوێکردنەوە: ' + updateError.message });
+        return res.status(500).json({ error: 'خەلەتی د نوی کرنێ دا: ' + updateError.message });
       }
 
       return res.status(200).json(updatedCustomer);
     }
 
   } catch (err) {
-    return res.status(500).json({ error: 'کێشەیەک ڕوویدا: ' + err.message });
+    return res.status(500).json({ error: 'خەلەتیەک چێبوو: ' + err.message });
   }
 }
