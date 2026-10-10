@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>سیستەمێ مۆرا زیرەک</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      touch-action: none; /* ناهێلیت شاشە بچیتە خوار و ژۆر دەمێ مۆر لێ دکەڤیت */
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      text-align: center;
+      width: 85%;
+      max-width: 360px;
+    }
+
+    .stamps-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin: 25px 0;
+    }
+
+    .slot {
+      aspect-ratio: 1;
+      border: 2px dashed #cbd5e1;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      transition: all 0.3s ease;
+    }
+
+    .slot.active {
+      background: #0d9488;
+      border: 2px solid #0d9488;
+      color: white;
+      transform: scale(1.05);
+    }
+
+    #touch-area {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 20px;
+      font-weight: bold;
+      color: #64748b;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>کارتا مۆران</h2>
+    <p>مۆرا دارین ل دەڤەرا ل خارێ بدە</p>
+
+    <div class="stamps-container">
+      <div class="slot" id="s1">1</div>
+      <div class="slot" id="s2">2</div>
+      <div class="slot" id="s3">3</div>
+      <div class="slot" id="s4">4</div>
+      <div class="slot" id="s5">5</div>
+      <div class="slot" id="s6">🎁</div>
+    </div>
+
+    <div id="touch-area">جهێ لێدانا مۆرێ</div>
+  </div>
+
+  <script>
+    let stampCount = 0;
+    const maxStamps = 6;
+    let isProcessing = false;
+
+    const touchArea = document.getElementById('touch-area');
+
+    // گوهداری ل بەرکەفتنا شاشەی دکەت
+    touchArea.addEventListener('touchstart', function(e) {
+      // ئەگەر ۳ تل (یان هەر ۳ خالێن مۆرا دارین) بێکڤە بەر شاشەی بکەڤن
+      if (e.touches.length === 3 && !isProcessing) {
+        e.preventDefault(); // رێگریێ ل زوومکرن یان تەحویلکرنا لاپەری دکەت
+
+        // پێڤانا دووراتیا ناڤبەرا خالان (Distance Formula)
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const t3 = e.touches[2];
+
+        const d1 = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        const d2 = Math.hypot(t2.clientX - t3.clientX, t2.clientY - t3.clientY);
+        const d3 = Math.hypot(t3.clientX - t1.clientX, t3.clientY - t1.clientY);
+
+        // کۆنترۆلکرن کا ئایا خال گونجاینە دگەل پێڤانێن مۆرێ
+        // د تاقیکرنێ دا، دەمێ ب ۳ تلان بگریت ئێکسەر وەردگریت:
+        if (d1 > 20 && d2 > 20 && d3 > 20) {
+          applyStamp();
+        }
+      }
+    }, { passive: false });
+
+    function applyStamp() {
+      if (stampCount >= maxStamps) return;
+
+      isProcessing = true;
+      stampCount++;
+
+      // دەنگ یان ڤایبرەیشن دەمێ مۆر سەرکەفتی بیت
+      if (navigator.vibrate) navigator.vibrate(80);
+
+      const currentSlot = document.getElementById(`s${stampCount}`);
+      if (currentSlot) {
+        currentSlot.classList.add('active');
+        currentSlot.textContent = '✓';
+      }
+
+      touchArea.textContent = 'مۆر سەرکەفتیانە هاتە لێدان!';
+      touchArea.style.borderColor = '#0d9488';
+      touchArea.style.color = '#0d9488';
+
+      // رێگری ل دوبارەبوونێ بۆ ماوێ ۲ چرکەیان
+      setTimeout(() => {
+        isProcessing = false;
+        if (stampCount === maxStamps) {
+          touchArea.textContent = 'پیرۆزە! تە خەلات بدەستڤە ئینا 🎉';
+        } else {
+          touchArea.textContent = 'جهێ لێدانا مۆرێ';
+          touchArea.style.borderColor = '#e2e8f0';
+          touchArea.style.color = '#64748b';
+        }
+      }, 2000);
+    }
+  </script>
+</body>
+</html>
