@@ -2,32 +2,49 @@
 <html lang="ku" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>پەنەلێ رێڤەبەریێ - کافێ</title>
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; margin: 0; padding: 20px; color: #0f172a; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; margin: 0; padding: 15px; color: #0f172a; }
     .container { max-width: 800px; margin: 0 auto; }
-    .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-    h1 { text-align: center; color: #0f172a; margin-bottom: 25px; }
-    p.subtitle { text-align: center; color: #64748b; margin-top: -15px; margin-bottom: 25px; }
+    .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    h1 { text-align: center; color: #0f172a; margin-bottom: 20px; font-size: 24px; }
+    p.subtitle { text-align: center; color: #64748b; margin-top: -10px; margin-bottom: 25px; font-size: 14px; }
     
-    input[type="password"] { width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; margin-bottom: 15px; font-size: 18px; text-align: center; direction: ltr; outline: none; }
+    input[type="password"] { width: 100%; box-sizing: border-box; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; margin-bottom: 15px; font-size: 18px; text-align: center; direction: ltr; outline: none; }
     input[type="password"]:focus { border-color: #0d9488; }
     
-    button { width: 100%; padding: 14px; background: #0d9488; color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+    button { width: 100%; box-sizing: border-box; padding: 14px; background: #0d9488; color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
     button:hover { background: #0f766e; }
     
     #data-screen { display: none; }
-    .btn-refresh { width: auto; padding: 10px 20px; background: #475569; margin-bottom: 20px; font-size: 14px; border-radius: 10px; }
     
-    table { width: 100%; border-collapse: collapse; text-align: right; }
-    th, td { padding: 14px 10px; border-bottom: 1px solid #f1f5f9; }
-    th { background: #f8fafc; color: #64748b; font-weight: normal; font-size: 14px; }
+    .header-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .btn-refresh { width: 100%; padding: 12px; background: #475569; font-size: 15px; border-radius: 10px; }
+    
+    .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid #f1f5f9; }
+    table { width: 100%; border-collapse: collapse; text-align: right; min-width: 500px; }
+    th, td { padding: 15px 12px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; font-size: 14px; }
+    th { background: #f8fafc; color: #64748b; font-weight: bold; }
     tr:hover { background: #f8fafc; }
     
-    .badge { background: #e0f2fe; color: #0284c7; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 13px; display: inline-block; }
-    .reward-badge { background: #fef3c7; color: #d97706; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 13px; display: inline-block; }
+    .badge { background: #e0f2fe; color: #0284c7; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; display: inline-block; }
+    .reward-badge { background: #fef3c7; color: #d97706; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; display: inline-block; }
     .date-text { font-size: 13px; color: #94a3b8; direction: ltr; display: inline-block; }
+
+    /* تحسينات إضافية للشاشات الصغيرة */
+    @media (max-width: 500px) {
+      body { padding: 10px; }
+      .card { padding: 15px; }
+      h1 { font-size: 22px; }
+    }
   </style>
 </head>
 <body>
@@ -35,29 +52,30 @@
   <div class="container">
     
     <!-- شاشەیا پاسۆردی -->
-    <div id="login-screen" class="card" style="max-width: 400px; margin: 60px auto;">
+    <div id="login-screen" class="card" style="max-width: 400px; margin: 40px auto;">
       <h1>ژوورا رێڤەبەریێ</h1>
       <p class="subtitle">پاسۆردێ تایبەت یێ سیستەمی بنڤیسە</p>
       <input type="password" id="admin-pass" placeholder="****" autofocus />
       <button onclick="login()">چوونە ژوور</button>
-      <p id="error-msg" style="color: #ef4444; text-align: center; display: none; margin-top: 15px;">پاسۆرد خەلەتە، جارەکا دی بکاربینە!</p>
+      <p id="error-msg" style="color: #ef4444; text-align: center; display: none; margin-top: 15px; font-size: 14px;">پاسۆرد خەلەتە، جارەکا دی بکاربینە!</p>
     </div>
 
     <!-- شاشەیا لیستا کڕیاران -->
     <div id="data-screen" class="card">
       <h1>لیستا کڕیاران</h1>
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <button class="btn-refresh" onclick="fetchData()">نویکرنەڤە (Refresh) ↻</button>
-        <p style="color: #64748b; font-size: 14px;">هەژمارا کڕیاران: <strong id="total-customers">0</strong></p>
+      
+      <div class="header-actions">
+         <p style="color: #64748b; font-size: 15px; margin: 0; font-weight: bold;">هەژمارا کڕیاران: <span id="total-customers" style="color: #0d9488; font-size: 18px;">0</span></p>
+         <button class="btn-refresh" onclick="fetchData()">نویکرنەڤە (Refresh) ↻</button>
       </div>
 
-      <div style="overflow-x: auto;">
+      <div class="table-wrapper">
         <table>
           <thead>
             <tr>
               <th>ژمارا مۆبایلێ</th>
               <th>مۆرێن نوکە</th>
-              <th>خەلاتێن وەرگرتی</th>
+              <th>خەلات</th>
               <th>دوماهیک سەرەدان</th>
             </tr>
           </thead>
@@ -80,7 +98,6 @@
       await fetchData();
     }
 
-    // ئەگەر ئینتەر لێدا پاسۆردی قەبیل بکەت
     document.getElementById('admin-pass').addEventListener('keypress', function (e) {
       if (e.key === 'Enter') login();
     });
@@ -130,7 +147,6 @@
       
       data.forEach(customer => {
         const dateObj = new Date(customer.updated_at);
-        // ڕێکخستنا دەمی ب شێوەیەکێ جوان
         const formattedDate = dateObj.toLocaleDateString('en-GB') + " - " + dateObj.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
         
         const tr = document.createElement('tr');
